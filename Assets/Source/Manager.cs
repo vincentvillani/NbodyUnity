@@ -2,6 +2,9 @@
 using System.Collections;
 using System.Collections.Generic;
 
+//TODO: Properly calculate the forces applied to two objects of different mass colliding
+//TODO: Give the bigger mass half of the other mass on collision
+
 public class Manager : MonoBehaviour 
 {
     const float POSITIONVALUE = 200.0f;
@@ -11,7 +14,7 @@ public class Manager : MonoBehaviour
     const float MINVALUEMASS = 0.1f;
     const float MAXVALUEMASS = 10.0f;
 
-    const int MASS_NUMBER = 500;
+    const int MASS_NUMBER = 800;
 
     List<Mass> massList;
 
@@ -61,10 +64,10 @@ public class Manager : MonoBehaviour
                     continue;
 
                 Vector3 distanceVector = massList[i].gameobject.transform.position - massList[j].gameobject.transform.position;
-                float distance = distanceVector.magnitude;
+                float distance = distanceVector.magnitude - (massList[i].mass / 2.0f) - (massList[j].mass / 2.0f);
 
                 //If the squared distance is less than the mass (mass is also the radius), then combine the two masses
-                if(distance <= massList[i].mass / 2.0f || distance <= massList[j].mass / 2.0f)
+                if(distance <= 0)
                 {
                     //Figure out which is the bigger mass
                     if (massList[i].mass >= massList[j].mass)
