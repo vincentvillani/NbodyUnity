@@ -7,14 +7,16 @@ using System.Collections.Generic;
 
 public class Manager : MonoBehaviour 
 {
-    const float POSITIONVALUE = 200.0f;
+    const float POSITIONVALUE = 100.0f;
 
     const float VELOCITYVALUE = 0.5f;
 
     const float MINVALUEMASS = 0.1f;
     const float MAXVALUEMASS = 10.0f;
 
-    const int MASS_NUMBER = 800;
+    const int MASS_NUMBER = 500;
+
+    const float simulationDelta = 1.0f / 144.0f;
 
     List<Mass> massList;
 
@@ -40,7 +42,6 @@ public class Manager : MonoBehaviour
         //Update force interactions
 	    for(int i = 0; i < massList.Count; ++i)
         {
-            //Gizmos.DrawSphere(massList[i].gameobject.transform.position, massList[i].mass);
 
             for(int j = i + 1; j < massList.Count; ++j)
             {
@@ -51,37 +52,37 @@ public class Manager : MonoBehaviour
         //Update the positions
         for(int i = 0; i < massList.Count; ++i)
         {
-            massList[i].gameobject.transform.position += massList[i].velocity * Time.deltaTime;
+            massList[i].gameobject.transform.position += massList[i].velocity * simulationDelta;
         }
 
         
-        //Check for collisions and combine?
+        //Check for collisions
         for (int i = 0; i < massList.Count; ++i)
         {
             for (int j = i + 1; j < massList.Count; ++j)
             {
-                if (i < 0 || j < 0)
-                    continue;
 
                 Vector3 distanceVector = massList[i].gameobject.transform.position - massList[j].gameobject.transform.position;
                 float distance = distanceVector.magnitude - (massList[i].mass / 2.0f) - (massList[j].mass / 2.0f);
 
-                //If the squared distance is less than the mass (mass is also the radius), then combine the two masses
+                //If the squared distance is less than the mass (mass is also the radius), then a collision has occured
                 if(distance <= 0)
                 {
-                    //Figure out which is the bigger mass
-                    if (massList[i].mass >= massList[j].mass)
-                    {
-                        MergeMasses(i, j);
-                    }
-                    else
-                    {
-                        MergeMasses(j, i);
-                    }
+                    //Normalise the distance vector
+                    distanceVector.Normalize();
 
-                    i -= 1;
-                    j -= 1;
+                    //Find the length of the component of each of the velocity vectors along the normalised distance vector
+                    float a1 = Vector3.Dot(massList[i].velocity, distanceVector);
+                    float a2 = Vector3.Dot(massList[j].velocity, distanceVector);
 
+                    //Calculate the common term in both v1' and v2'
+                    float commonTerm = (2.0f * (a1 - a2)) / (massList[i].mass + massList[j].mass);
+
+                    //Calculate the new velocity vector of mass1
+                    massList[i].velocity = massList[i].velocity - commonTerm * massList[j].mass * distanceVector;
+
+                    //Calculate the new velocity vector of mass2
+                    massList[j].velocity = massList[j].velocity + commonTerm * massList[i].mass * distanceVector;
                 }
             }
         }
@@ -102,13 +103,15 @@ public class Manager : MonoBehaviour
 
         float force = ((mass1.mass * mass2.mass) / distanceSquared); //gravitionalConstant * ( (mass1.mass * mass2.mass) / distanceSquared);
 
-        Vector3 forceVector = force * distanceVectorNormalised * Time.deltaTime;
+        Vector3 forceVector = force * distanceVectorNormalised * simulationDelta;
         mass1.velocity += forceVector;
         mass2.velocity -= forceVector;
 
     }
 
 
+
+    /*
     public void MergeMasses(int index1, int index2)
     {
         const float scaleFactor = 8.0f;
@@ -124,4 +127,5 @@ public class Manager : MonoBehaviour
         GameObject.Destroy(mass2.gameobject);
         massList.RemoveAt(index2);
     }
+    */
 }
